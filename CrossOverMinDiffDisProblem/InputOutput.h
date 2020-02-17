@@ -66,11 +66,12 @@ public:
     void randomInit();
     bool check(const UMatrix &_matrix);          //检查当前解的目标函数值是否正确
     void print();
+    List<int> ele_value;         //一维vector标识节点是否被选中
 
 private:
     int nb_set_ele;              //总节点数目
     int nb_subset_ele;           //所选的节点数目
-    List<int> ele_value;         //一维vector标识节点是否被选中
+    //List<int> ele_value;         //一维vector标识节点是否被选中
     Distance object;               //目标函数值
 };
 

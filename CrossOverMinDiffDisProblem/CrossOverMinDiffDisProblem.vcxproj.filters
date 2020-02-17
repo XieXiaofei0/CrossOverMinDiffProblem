@@ -18,13 +18,13 @@
     <ClCompile Include="InputOutput.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="LocalSearch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="utility.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CrossOver.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,10 +35,10 @@
     <ClInclude Include="InputOutput.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="LocalSearch.h">
+    <ClInclude Include="utility.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="utility.h">
+    <ClInclude Include="CrossOver.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
