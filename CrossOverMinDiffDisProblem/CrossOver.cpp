@@ -177,6 +177,7 @@ namespace min_diff_dp {
 
     Solution CrossOver::solve() {
         Timer time(max_time);
+        clock_t start_time = clock();
         while (!time.isTimeOut()) {
             //通过cross中的判断，两个解的相似度不会越来越大
             //两个解进行交叉得到两个解
@@ -196,6 +197,14 @@ namespace min_diff_dp {
             }
             generation++;
         }
+        mylog << "\n总交叉代数：" << generation <<= logsw_local;
+        clock_t end_time = clock();
+        //test
+        //关键信息输出到文件中
+        ofstream outFile;
+        outFile.open("../Deploy/Logs/log.csv", ios::app);
+        outFile << (double)(end_time - start_time) / CLOCKS_PER_SEC << "s" << ',' << nb_nodes << ',' << nb_sub_nodes << ',' << myrand.getSeed() << ',' << tabu_iter_max << ',' << iter_cycle << ',' << generation << ',' << cross_best_obj << endl;
+        outFile.close();
         return Solution(nb_nodes, nb_sub_nodes, cross_best, cross_best_obj);
     }
 
@@ -227,13 +236,6 @@ namespace min_diff_dp {
             hashtwo[1] = hashtwo[0];
             hashthree[1] = hashthree[0];
         }
-
-        //test
-        //mylog << "两个交叉的最优解：" <<= logsw_info;
-        //mylog << "解1：  " << local_best_obj[0] << "     解2：  " << local_best_obj[1] <<= logsw_info;
-        //mylog << "当前是第几代：" << cycle << "      当前交叉次数为：" << generation << "     相同节点个数：" << ivec.size() <<= logsw_info;
-        //test end
-
         vector<vector<int>> select_nodes;
         select_nodes.resize(2);
         select_nodes[0] = ivec;
@@ -265,21 +267,6 @@ namespace min_diff_dp {
         }
         local_best[0] = cur_nodes[0];
         local_best[1] = cur_nodes[1];
-
-        //test
-        //mylog << "第一个解为：  " <<= logsw_info;
-        //for (int i = 0; i < nb_nodes; ++i)if (local_best[0][i])mylog << i << " ";
-        //mylog <<= logsw_info;
-        //mylog << "第二个解为：   " <<= logsw_info;
-        //for (int i = 0; i < nb_nodes; ++i)if (local_best[1][i])mylog << i << " ";
-        //sort(select_nodes[0].begin(), select_nodes[0].end());
-        //sort(select_nodes[1].begin(), select_nodes[1].end());
-        //vector<int> ivec1(nb_sub_nodes);
-        //auto iter1 = set_intersection(select_nodes[0].begin(), select_nodes[0].end(), select_nodes[1].begin(), select_nodes[1].end(), ivec1.begin());
-        //ivec1.resize(iter1 - ivec1.begin());//重新确定ivec大小
-       
-        //test end
-
         for (int i = 0; i < population; ++i) {
             Distance max = -1, min = DISTANCE_MAX;
             for (int l = 0; l < nb_nodes; ++l) {
@@ -296,41 +283,6 @@ namespace min_diff_dp {
             best_min_select_node[i] = min;
             local_best_obj[i] = max - min;
         }
-        //test
-        //mylog << "交叉完之后的解为： " <<= logsw_info;
-        //mylog << "解1：  " << local_best_obj[0] << "     解2：  " << local_best_obj[1] <<= logsw_info;
-        //mylog << "相同节点个数为：    " << ivec1.size() <<= logsw_info;
-        //mylog <<= logsw_info;
-        //mylog <<= logsw_info;
-        //test end
-        //test
-        //List<int> select;
-        //select.reserve(nb_sub_nodes);
-        //for (int i = 0; i < nb_nodes; ++i) {
-        //    if (local_best[0][i])select.push_back(i);
-        //}
-        //Distance min = DISTANCE_MAX, max = 0;
-        //for (int i = 0; i < nb_sub_nodes; ++i) {
-        //    Distance cur = 0;
-        //    for (int j = 0; j < nb_sub_nodes; ++j) {
-        //        cur += ins.dis_nodes(select[i], select[j]);
-        //    }
-        //    if (cur > max)max = cur;
-        //    if (cur < min)min = cur;
-        //}
-        //mylog << "最大值：" << max << "     " << best_max_select_node[0] <<= logsw_info;
-        //Distance obj = max - min;
-        //mylog << "检查的目标函数值为：" << obj <<= logsw_info;
-        //mylog << "当前的目标函数值为：" << local_best_obj[0] <<= logsw_info;
-        //long long sum = 0;
-        //for (int i = 0; i < nb_nodes; ++i) {
-        //    if (local_best[1][i]) {
-        //        sum += (int)(floor(pow(i, hashFun_one_param)));
-        //    }
-        //}
-        //mylog << "哈希值：  " << sum << "    " << best_hashfun_one[1] <<= logsw_info;
-        //test end
-
     }
 
     void CrossOver::tabusearch() {
@@ -339,8 +291,8 @@ namespace min_diff_dp {
             bool tabu_flag = false;
             int iter = 0;
             int step_length = 0;         //保存多少步之内改进不了历史最优解
-            while (iter < tabu_iter_max) {
-            //while(true){
+            //while (iter < tabu_iter_max) {
+            while(true){
                 int _hashfun_one = best_hashfun_one[i];
                 int _hashfun_two = best_hashfun_two[i];
                 int _hashfun_three = best_hashfun_three[i];
@@ -375,11 +327,11 @@ namespace min_diff_dp {
                     if (update_solu(i, swap_pair, new_obj, _hashfun_one, _hashfun_two, _hashfun_three, step_length))count = 0;   //更新当前解、历史最优解、count
                     else count++;
                     iter++;
-                    //if (step_length == tabu_iter_max) {
-                    //    //iter_max += 10;
-                    //    tabu_flag = true;
-                    //    break;
-                    //}
+                    if (step_length == tabu_iter_max) {
+                        tabu_flag = true;
+                        step_length = 0;
+                       break;
+                    }
                 }
                 if (tabu_flag)break;
             }
@@ -396,9 +348,6 @@ namespace min_diff_dp {
         if (local_best_obj[min_index] < elite_obj[0]) {
             elite[0] = local_best[min_index];
             elite_obj[0] = local_best_obj[min_index];
-            //test
-            //mylog << "当前是第几代：  " << cycle << "    交叉代数 ：" << generation << "  改进elite1解：    " << local_best_obj[min_index] <<= logsw_info;
-            //test end
         }
     }
 
@@ -406,9 +355,6 @@ namespace min_diff_dp {
         if (elite_obj[0] < cross_best_obj) {
             cross_best = elite[0];
             cross_best_obj = elite_obj[0];
-            //test
-            mylog << "当前是第几代：  " << cycle << "    交叉代数 ：" << generation << "                 更新历史最优解：    " << elite_obj[0] <<= logsw_info;
-            //test end
         }
     }
 
@@ -419,7 +365,6 @@ namespace min_diff_dp {
         int num_select = 0;
         int i = 0;
         time_t t = time(0);
-        mylog << "产生elite1的随机种子为:  " << t <<= logsw_info;
         srand(t);
         while (num_select < nb_sub_nodes) {
             while (true) {
@@ -501,9 +446,6 @@ namespace min_diff_dp {
             best_hashfun_one[number] = _hash_one;
             best_hashfun_two[number] = _hash_two;
             best_hashfun_three[number] = _hash_three;
-            //test:TODO:多少步之后不能迭代更新
-            //mylog << "第" << number << " 个popu  ：\n当前为：" << local_best_obj[number] << "     交叉代数 ：" << cross_num << "    迭代次数  ： " <<= logsw_local;
-            //test end
             flag = true;
             step = 0;
         }
