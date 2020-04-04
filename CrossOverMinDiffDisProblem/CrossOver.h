@@ -19,6 +19,7 @@ namespace min_diff_dp {
         void update_elite();   //更新elite1解
         void update_best();      //跟新历史最优解
         void random_elite_one();
+        void cross_over();
     private:
         void find_best_move(const int number, pair<int, int> &_pair, pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three);
         bool update_solu(const int number, const pair<int, int> &_pair, const pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, int &step);

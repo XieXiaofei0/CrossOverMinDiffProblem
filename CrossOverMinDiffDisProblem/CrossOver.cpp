@@ -285,6 +285,211 @@ namespace min_diff_dp {
         }
     }
 
+    void CrossOver::cross_over() {
+        //求出两个解的公共节点
+        List<List<int>> solu;
+        solu.resize(2);
+        solu[0].reserve(nb_sub_nodes);
+        solu[1].reserve(nb_sub_nodes);
+        List<List<int>> cur_nodes(2, List<int>(nb_nodes, 0));
+        List<int> hashone(2, 0), hashtwo(2, 0), hashthree(2, 0);
+        for (int i = 0; i < population; ++i) {
+            for (int j = 0; j < nb_nodes; ++j) {
+                if (local_best[i][j])solu[i].push_back(j);
+            }
+        }
+        sort(solu[0].begin(), solu[0].end());
+        sort(solu[1].begin(), solu[1].end());
+        vector<int> ivec(nb_sub_nodes);
+        auto iter = set_intersection(solu[0].begin(), solu[0].end(), solu[1].begin(), solu[1].end(), ivec.begin());
+        ivec.resize(iter - ivec.begin());//重新确定ivec大小
+        //end
+        //找出两个解的非公共节点放在两个数组ivec_difference_one和ivec_difference_two中
+        vector<int> ivec_difference_one(nb_sub_nodes);
+        auto iter_difference_one = set_difference(solu[0].begin(), solu[0].end(), ivec.begin(), ivec.end(), ivec_difference_one.begin());
+        ivec_difference_one.resize(iter_difference_one - ivec_difference_one.begin());//重新确定ivec大小
+        vector<int> ivec_difference_two(nb_sub_nodes);
+        auto iter_difference_two = set_difference(solu[1].begin(), solu[1].end(), ivec.begin(), ivec.end(), ivec_difference_two.begin());
+        ivec_difference_two.resize(iter_difference_two - ivec_difference_two.begin());//重新确定ivec大小
+        //set<int> no_select_nodes_one_first(ivec_difference_one.begin(), ivec_difference_one.end());
+        //set<int> no_select_nodes_one_second(ivec_difference_two.begin(), ivec_difference_two.end());
+        //set<int> no_select_nodes_two_first(ivec_difference_one.begin(), ivec_difference_one.end());
+        //set<int> no_select_nodes_two_second(ivec_difference_two.begin(), ivec_difference_two.end());
+        //公共节点的相关结构更新；将选中节点放在集合select_nodes_one中
+        set<int> select_nodes_one;
+        set<int> select_nodes_two;
+        for (int l = 0; l < nb_nodes; ++l) {
+            best_solu_dis_sum[0][l] = 0;
+            best_solu_dis_sum[1][l] = 0;
+            for (int i = 0; i < ivec.size(); ++i) {
+                best_solu_dis_sum[0][l] += ins.dis_nodes(l, ivec[i]);
+                best_solu_dis_sum[1][l] += ins.dis_nodes(l, ivec[i]);
+                cur_nodes[0][ivec[i]] = 1;
+                cur_nodes[1][ivec[i]] = 1;
+                select_nodes_one.insert(ivec[i]); //new
+                select_nodes_two.insert(ivec[i]); //new
+                hashone[0] += hash_key_temp_one[ivec[i]];      //同时保存新的解的hash值
+                hashtwo[0] += hash_key_temp_two[ivec[i]];
+                hashthree[0] += hash_key_temp_three[ivec[i]];
+                hashone[1] = hashone[0];
+                hashtwo[1] = hashtwo[0];
+                hashthree[1] = hashthree[0];
+            }
+        }
+        //end
+        int remain = nb_sub_nodes - ivec.size();
+        //首先交叉得出第一个解
+        int index = 0;
+        int num = 0;
+        while (num < remain) {
+            pair<int, Distance> best_node(-1, DISTANCE_MAX);   //保存最好的将要选中的节点
+            Distance min_node = DISTANCE_MAX;
+            Distance max_dis = -1;
+            Distance min_dis = DISTANCE_MAX;
+            Distance dis = 0;
+            if (index == 0) {
+                for (int j = 0; j < remain; ++j) {
+                    if (cur_nodes[0][ivec_difference_one[j]])continue;
+                    else {
+                        set<int>::iterator it = select_nodes_one.begin();
+                        for (; it != select_nodes_one.end(); it++) {
+                            int distance = ins.dis_nodes(ivec_difference_one[j], *it);
+                            dis += distance;
+                            if (max_dis < best_solu_dis_sum[0][*it] + distance)max_dis = best_solu_dis_sum[0][*it] + distance;
+                            if (min_dis > best_solu_dis_sum[0][*it] + distance)min_dis = best_solu_dis_sum[0][*it] + distance;
+                        }
+                        max_dis = max(max_dis, dis);
+                        min_dis = min(min_dis, dis);
+                        if (max_dis - min_dis < min_node) {
+                            min_node = max_dis - min_dis;
+                            best_node.first = ivec_difference_one[j];
+                            best_node.second = dis;
+                        }
+                    }
+                }
+            }
+            else {
+                for (int j = 0; j < remain; ++j) {
+                    if (cur_nodes[0][ivec_difference_two[j]])continue;
+                    else {
+                        set<int>::iterator it = select_nodes_one.begin();
+                        for (; it != select_nodes_one.end(); it++) {
+                            int distance = ins.dis_nodes(ivec_difference_two[j], *it);
+                            dis += distance;
+                            if (max_dis < best_solu_dis_sum[0][*it] + distance)max_dis = best_solu_dis_sum[0][*it] + distance;
+                            if (min_dis > best_solu_dis_sum[0][*it] + distance)min_dis = best_solu_dis_sum[0][*it] + distance;
+                        }
+                        max_dis = max(max_dis, dis);
+                        min_dis = min(min_dis, dis);
+                        if (max_dis - min_dis < min_node) {
+                            min_node = max_dis - min_dis;
+                            best_node.first = ivec_difference_two[j];
+                            best_node.second = dis;
+                        }
+                    }
+                }
+
+            }
+            index = 1 - index;
+            ++num;
+            select_nodes_one.insert(best_node.first);
+            cur_nodes[0][best_node.first] = 1;
+            hashone[0] += hash_key_temp_one[best_node.first];
+            hashtwo[0] += hash_key_temp_two[best_node.first];
+            hashthree[0] += hash_key_temp_three[best_node.first];
+            Distance max = -1, min = DISTANCE_MAX;
+            for (int l = 0; l < nb_nodes; ++l) {
+                best_solu_dis_sum[0][l] += ins.dis_nodes(l, best_node.first);
+                if (cur_nodes[0][l]) {
+                    if (max < best_solu_dis_sum[0][l])max = best_solu_dis_sum[0][l];
+                    if (min > best_solu_dis_sum[0][l])min = best_solu_dis_sum[0][l];
+                }
+            }
+            best_max_select_node[0] = max;
+            best_min_select_node[0] = min;
+            local_best_obj[0] = max - min;
+        }
+        best_hashfun_one[0] = hashone[0] % size_of_tabu_list;
+        best_hashfun_two[0] = hashtwo[0] % size_of_tabu_list;
+        best_hashfun_three[0] = hashthree[0] % size_of_tabu_list;
+        local_best[0] = cur_nodes[0];
+        //交叉得出第2个解
+        index = 1;
+        num = 0;
+        while (num < remain) {
+            pair<int, Distance> best_node(-1, DISTANCE_MAX);   //保存最好的将要选中的节点
+            Distance min_node = DISTANCE_MAX;
+            Distance max_dis = -1;
+            Distance min_dis = DISTANCE_MAX;
+            Distance dis = 0;
+            if (index == 0) {
+                for (int j = 0; j < remain; ++j) {
+                    if (cur_nodes[1][ivec_difference_one[j]])continue;
+                    else {
+                        set<int>::iterator it = select_nodes_two.begin();
+                        for (; it != select_nodes_two.end(); it++) {
+                            int distance = ins.dis_nodes(ivec_difference_one[j], *it);
+                            dis += distance;
+                            if (max_dis < best_solu_dis_sum[1][*it] + distance)max_dis = best_solu_dis_sum[1][*it] + distance;
+                            if (min_dis > best_solu_dis_sum[1][*it] + distance)min_dis = best_solu_dis_sum[1][*it] + distance;
+                        }
+                        max_dis = max(max_dis, dis);
+                        min_dis = min(min_dis, dis);
+                        if (max_dis - min_dis < min_node) {
+                            min_node = max_dis - min_dis;
+                            best_node.first = ivec_difference_one[j];
+                            best_node.second = dis;
+                        }
+                    }
+                }
+            }
+            else {
+                for (int j = 0; j < remain; ++j) {
+                    if (cur_nodes[1][ivec_difference_two[j]])continue;
+                    else {
+                        set<int>::iterator it = select_nodes_two.begin();
+                        for (; it != select_nodes_two.end(); it++) {
+                            int distance = ins.dis_nodes(ivec_difference_two[j], *it);
+                            dis += distance;
+                            if (max_dis < best_solu_dis_sum[1][*it] + distance)max_dis = best_solu_dis_sum[1][*it] + distance;
+                            if (min_dis > best_solu_dis_sum[1][*it] + distance)min_dis = best_solu_dis_sum[1][*it] + distance;
+                        }
+                        max_dis = max(max_dis, dis);
+                        min_dis = min(min_dis, dis);
+                        if (max_dis - min_dis < min_node) {
+                            min_node = max_dis - min_dis;
+                            best_node.first = ivec_difference_two[j];
+                            best_node.second = dis;
+                        }
+                    }
+                }
+
+            }
+            index = 1 - index;
+            ++num;
+            select_nodes_two.insert(best_node.first);
+            cur_nodes[1][best_node.first] = 1;
+            hashone[1] += hash_key_temp_one[best_node.first];
+            hashtwo[1] += hash_key_temp_two[best_node.first];
+            hashthree[1] += hash_key_temp_three[best_node.first];
+            Distance max = -1, min = DISTANCE_MAX;
+            for (int l = 0; l < nb_nodes; ++l) {
+                best_solu_dis_sum[1][l] += ins.dis_nodes(l, best_node.first);
+                if (cur_nodes[1][l]) {
+                    if (max < best_solu_dis_sum[1][l])max = best_solu_dis_sum[1][l];
+                    if (min > best_solu_dis_sum[1][l])min = best_solu_dis_sum[1][l];
+                }
+            }
+            best_max_select_node[1] = max;
+            best_min_select_node[1] = min;
+            local_best_obj[1] = max - min;
+        }
+        best_hashfun_one[1] = hashone[0] % size_of_tabu_list;
+        best_hashfun_two[1] = hashtwo[0] % size_of_tabu_list;
+        best_hashfun_three[1] = hashthree[0] % size_of_tabu_list;
+        local_best[1] = cur_nodes[1];
+    }
+
     void CrossOver::tabusearch() {
         //TODO：可以多少步之内改进不了历史最优解停止，目前设置为一定步数
         for (int i = 0; i < population; ++i) {
